@@ -1,0 +1,29 @@
+name: TinyML checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify generated model artifacts
+        run: python3 tools/export_behavior_model.py --check
+
+      - name: Run Python tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Compile C++ model smoke test
+        run: g++ -std=c++17 -Wall -Wextra -Werror -I. tests/cpp_smoke.cpp -o /tmp/cozmo-model-smoke
+
+      - name: Run C++ model smoke test
+        run: /tmp/cozmo-model-smoke
