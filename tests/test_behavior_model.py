@@ -1,5 +1,10 @@
 import unittest
 from collections import Counter
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 
 from ml.behavior_model import (
     State,
@@ -59,6 +64,29 @@ class ModelContractTests(unittest.TestCase):
         self.assertEqual(first, second)
         counts = Counter(first[1])
         self.assertEqual(set(counts.values()), {72})
+
+
+class ArtifactTests(unittest.TestCase):
+    def test_exporter_emits_reproducible_header_and_metadata(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory)
+            command = [
+                sys.executable,
+                "tools/export_behavior_model.py",
+                "--output-dir",
+                str(output),
+            ]
+            subprocess.run(command, cwd=root, check=True)
+            header = (output / "behavior_model.h").read_text()
+            metadata = json.loads((output / "behavior_model.json").read_text())
+            self.assertIn("inline Prediction predict", header)
+            self.assertEqual(metadata["features"], [
+                "energy", "mood", "annoyance", "boredom",
+                "touch_active", "interaction_age", "tap_burst",
+            ])
+            self.assertEqual(len(metadata["classes"]), 6)
+            self.assertEqual(metadata["dataset_size"], 432)
 
 
 if __name__ == "__main__":
