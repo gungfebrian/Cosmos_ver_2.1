@@ -89,5 +89,14 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(metadata["dataset_size"], 432)
 
 
+class FirmwareIntegrationTests(unittest.TestCase):
+    def test_firmware_places_ml_advice_after_safety_thresholds(self):
+        source = Path("CozmoMini_ver_2.1.ino").read_text()
+        self.assertIn('#include "ml/behavior_model.h"', source)
+        self.assertIn("MODEL_CONFIDENCE = 0.78", source)
+        self.assertIn("MODEL_DECISION_INTERVAL_MS = 1000", source)
+        self.assertLess(source.index("energy <= ENERGY_SLEEPY"), source.index("cozmo_ml::predict"))
+
+
 if __name__ == "__main__":
     unittest.main()
