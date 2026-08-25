@@ -1,9 +1,11 @@
 import unittest
+from collections import Counter
 
 from ml.behavior_model import (
     State,
     confidence_gate,
     expert_intent,
+    generate_dataset,
     predict,
     softmax,
     train,
@@ -50,6 +52,13 @@ class ModelContractTests(unittest.TestCase):
     def test_confidence_gate_rejects_uncertain_predictions(self):
         self.assertFalse(confidence_gate(0.779, threshold=0.78))
         self.assertTrue(confidence_gate(0.780, threshold=0.78))
+
+    def test_generated_dataset_is_balanced_and_reproducible(self):
+        first = generate_dataset()
+        second = generate_dataset()
+        self.assertEqual(first, second)
+        counts = Counter(first[1])
+        self.assertEqual(set(counts.values()), {72})
 
 
 if __name__ == "__main__":
