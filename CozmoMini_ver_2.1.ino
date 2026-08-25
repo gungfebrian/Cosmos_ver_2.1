@@ -461,22 +461,22 @@ void updateBrain() {
     const cozmo_ml::Prediction prediction = cozmo_ml::predict(features);
     if (prediction.confidence >= MODEL_CONFIDENCE) {
       switch (prediction.intent) {
-        case cozmo_ml::Intent::ANGRY:
+        case cozmo_ml::Intent::INTENT_ANGRY:
           if (mode != MODE_ANGRY) enterMode(MODE_ANGRY);
           break;
-        case cozmo_ml::Intent::ANNOYED:
+        case cozmo_ml::Intent::INTENT_ANNOYED:
           if (mode != MODE_ANNOYED) enterMode(MODE_ANNOYED);
           break;
-        case cozmo_ml::Intent::SLEEPY:
+        case cozmo_ml::Intent::INTENT_SLEEPY:
           if (mode != MODE_SLEEPY) enterMode(MODE_SLEEPY);
           break;
-        case cozmo_ml::Intent::ATTENTION:
+        case cozmo_ml::Intent::INTENT_ATTENTION:
           if (mode != MODE_ATTENTION) enterMode(MODE_ATTENTION);
           break;
-        case cozmo_ml::Intent::PLAYFUL:
+        case cozmo_ml::Intent::INTENT_PLAYFUL:
           if (mode != MODE_PLAYFUL) enterMode(MODE_PLAYFUL);
           break;
-        case cozmo_ml::Intent::IDLE:
+        case cozmo_ml::Intent::INTENT_IDLE:
         default:
           break;
       }

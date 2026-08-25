@@ -81,6 +81,8 @@ class ArtifactTests(unittest.TestCase):
             header = (output / "behavior_model.h").read_text()
             metadata = json.loads((output / "behavior_model.json").read_text())
             self.assertIn("inline Prediction predict", header)
+            self.assertIn("INTENT_ANGRY", header)
+            self.assertNotIn("    ANGRY = 1", header)
             self.assertEqual(metadata["features"], [
                 "energy", "mood", "annoyance", "boredom",
                 "touch_active", "interaction_age", "tap_burst",
@@ -96,6 +98,25 @@ class FirmwareIntegrationTests(unittest.TestCase):
         self.assertIn("MODEL_CONFIDENCE = 0.78", source)
         self.assertIn("MODEL_DECISION_INTERVAL_MS = 1000", source)
         self.assertLess(source.index("energy <= ENERGY_SLEEPY"), source.index("cozmo_ml::predict"))
+
+
+class DocumentationTests(unittest.TestCase):
+    def test_readme_explains_the_reproducible_tinyml_workflow(self):
+        readme = Path("README.md").read_text()
+        for expected in (
+            "python3 tools/export_behavior_model.py",
+            "--check",
+            "0.78",
+            "policy distillation",
+            "ml/",
+        ):
+            self.assertIn(expected, readme)
+
+    def test_ci_runs_python_and_cpp_checks(self):
+        workflow = Path(".github/workflows/test.yml").read_text()
+        self.assertIn("python3 -m unittest discover -s tests -v", workflow)
+        self.assertIn("g++ -std=c++17", workflow)
+        self.assertIn("tools/export_behavior_model.py --check", workflow)
 
 
 if __name__ == "__main__":

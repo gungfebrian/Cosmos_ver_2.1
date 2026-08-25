@@ -6,12 +6,12 @@
 namespace cozmo_ml {
 
 enum class Intent : unsigned char {
-    IDLE = 0,
-    ANGRY = 1,
-    ANNOYED = 2,
-    SLEEPY = 3,
-    ATTENTION = 4,
-    PLAYFUL = 5
+    INTENT_IDLE = 0,
+    INTENT_ANGRY = 1,
+    INTENT_ANNOYED = 2,
+    INTENT_SLEEPY = 3,
+    INTENT_ATTENTION = 4,
+    INTENT_PLAYFUL = 5
 };
 
 struct Features {
