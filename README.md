@@ -51,44 +51,6 @@ These four numbers are checked every loop, and the robot picks the mode that fit
 - Gets **dizzy** if it spins too much
 - Runs low on energy → gets sleepy → falls asleep
 
-## TinyML behavior inference
-
-CozmoMini now includes a small, interpretable machine-learning layer that
-advises the existing mood engine. It predicts the next autonomous intent from
-seven normalized signals: energy, mood, annoyance, boredom, touch activity,
-time since interaction, and recent tap count. The model is a six-class softmax
-regression classifier for `IDLE`, `ANGRY`, `ANNOYED`, `SLEEPY`, `ATTENTION`,
-and `PLAYFUL`.
-
-The pipeline is deliberately dependency-free:
-
-```text
-drive state → deterministic expert labels → balanced training set
-           → Python softmax training → generated C++ header
-           → confidence-gated ESP32 inference
-```
-
-Generate the checked-in embedded artifact from the repository root:
-
-```bash
-python3 tools/export_behavior_model.py
-python3 tools/export_behavior_model.py --check
-python3 -m unittest discover -s tests -v
-g++ -std=c++17 -Wall -Wextra -Werror -I. tests/cpp_smoke.cpp -o /tmp/cozmo-model-smoke
-/tmp/cozmo-model-smoke
-```
-
-The firmware accepts model advice only at confidence `0.78` or higher and no
-more than once per second. Its existing rage, annoyance, and low-energy
-thresholds remain authoritative, so the model cannot bypass the robot's
-hard-coded safety behavior.
-
-This is **policy distillation**, not a claim of learning from real user data:
-the training labels are generated deterministically from the existing expert
-policy. That makes the example reproducible and privacy-preserving, while
-leaving a clear next step: add opt-in telemetry and evaluate the model against
-real interaction traces before changing the policy.
-
 ## Hardware
 
 | Part | Detail |
@@ -129,11 +91,7 @@ Serial monitor runs at **115200 baud** if you want to watch for the "SSD1306 not
 |------|---------|
 | `CozmoMini_ver_2.1.ino` | Current firmware — the full mood engine and behavior |
 | `CozmoMini_ver_2.ino` | Servo test sketch used during bring-up |
-| `ml/behavior_model.py` | Standard-library training and inference implementation |
-| `ml/behavior_model.h` | Generated allocation-free C++ inference artifact |
-| `ml/behavior_model.json` | Model metadata, feature order, and training recipe |
-| `tools/export_behavior_model.py` | Reproducible model training and export command |
-| `tests/` | Python behavior tests and C++ header smoke test |
+| `CozmoMini Ver 1/` | Earlier version |
 
 ## Tuning it
 
@@ -145,7 +103,6 @@ Most of the personality lives in a few constants near the top of the sketch — 
 - [ ] Sound / buzzer feedback for reactions
 - [ ] Battery level awareness
 - [ ] More gestures
-- [ ] Replace synthetic policy labels with opt-in real telemetry evaluation
 
 ## Author
 
