@@ -40,6 +40,7 @@
 #include <Adafruit_SSD1306.h>
 #include <FluxGarage_RoboEyes.h>
 #include <ESP32Servo.h>
+#include "ml/behavior_model.h"
 
 /* -------- DISPLAY -------- */
 #define SCREEN_WIDTH  128
@@ -119,6 +120,9 @@ unsigned long nextRoamExcursion = 0, nextQuirk = 0;
 unsigned long attnNextHop = 0, angryNextShake = 0, angryNextMove = 0;
 unsigned long playNext = 0, nextPlay = 0;
 unsigned long dizzyNextConfused = 0;
+const float MODEL_CONFIDENCE = 0.78;
+const unsigned long MODEL_DECISION_INTERVAL_MS = 1000;
+unsigned long lastModelDecision = 0;
 
 /* -------- DIZZY -------- */
 int spinLoad = 0;
@@ -437,6 +441,46 @@ void updateBrain() {
     else if (energy <= ENERGY_SLEEPY)       enterMode(MODE_SLEEPY);
     else if (mode != MODE_ATTENTION && boredom >= BORED_TH) enterMode(MODE_ATTENTION);
     else if (mood >= 82 && energy >= 55 && now > nextPlay)  enterMode(MODE_PLAYFUL);
+  }
+
+  // TinyML advice is deliberately downstream of the safety-first thresholds.
+  // The confidence gate and one-second cadence keep low-confidence predictions
+  // from making the behavior jittery.
+  if (freeMode && (mode == MODE_IDLE || mode == MODE_ROAM || mode == MODE_ATTENTION) &&
+      now - lastModelDecision >= MODEL_DECISION_INTERVAL_MS) {
+    lastModelDecision = now;
+    const cozmo_ml::Features features = {{
+      clampf(energy / 100.0, 0, 1),
+      clampf(mood / 100.0, 0, 1),
+      clampf(annoyance / 100.0, 0, 1),
+      clampf(boredom / 100.0, 0, 1),
+      touchActive ? 1.0f : 0.0f,
+      clampf((now - lastInteraction) / 5000.0, 0, 1),
+      clampf(tapsInWindow(now, 5000) / 8.0, 0, 1)
+    }};
+    const cozmo_ml::Prediction prediction = cozmo_ml::predict(features);
+    if (prediction.confidence >= MODEL_CONFIDENCE) {
+      switch (prediction.intent) {
+        case cozmo_ml::Intent::INTENT_ANGRY:
+          if (mode != MODE_ANGRY) enterMode(MODE_ANGRY);
+          break;
+        case cozmo_ml::Intent::INTENT_ANNOYED:
+          if (mode != MODE_ANNOYED) enterMode(MODE_ANNOYED);
+          break;
+        case cozmo_ml::Intent::INTENT_SLEEPY:
+          if (mode != MODE_SLEEPY) enterMode(MODE_SLEEPY);
+          break;
+        case cozmo_ml::Intent::INTENT_ATTENTION:
+          if (mode != MODE_ATTENTION) enterMode(MODE_ATTENTION);
+          break;
+        case cozmo_ml::Intent::INTENT_PLAYFUL:
+          if (mode != MODE_PLAYFUL) enterMode(MODE_PLAYFUL);
+          break;
+        case cozmo_ml::Intent::INTENT_IDLE:
+        default:
+          break;
+      }
+    }
   }
 
   // ANGRY: storm around like an angry child + furious head shakes
